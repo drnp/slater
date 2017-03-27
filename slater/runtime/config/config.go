@@ -27,13 +27,23 @@
  * SUCH DAMAGE.
  */
 
-package conf
+package config
 
 import (
 	"fmt"
 
 	"github.com/spf13/viper"
 )
+
+// Get configuration varible
+/* {{{ [config.Get] Get varible */
+func Get(key string) string {
+	val := viper.Get(key)
+
+	return val.(string)
+}
+
+/* }}} */
 
 // Initial
 /* {{{ [init] Pakcage init */

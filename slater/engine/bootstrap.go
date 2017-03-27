@@ -31,12 +31,15 @@ package engine
 
 import (
 	"fmt"
+
+	"github.com/drnp/slater/slater/runtime/config"
 )
 
 // Start : Startup portal of Slater engine
 /* {{{ [slater.engine.Startup] Startup */
 func Start() {
 	fmt.Printf("Hello slater!!!\n")
+	fmt.Printf(config.Get("test"))
 
 	return
 }
