@@ -29,19 +29,11 @@
 
 package engine
 
-import (
-	"fmt"
-
-	"github.com/drnp/slater/slater/runtime/config"
-)
-
-// Start : Startup portal of Slater engine
-/* {{{ [slater.engine.Startup] Startup */
-func Start() {
-	fmt.Printf("Hello slater!!!\n")
-	fmt.Printf(config.Get("test"))
-
-	return
-}
-
-/* }}} */
+/*
+ * Local variables:
+ * tab-width: 4
+ * c-basic-offset: 4
+ * End:
+ * vim600: sw=4 ts=4 fdm=marker
+ * vim<600: sw=4 ts=4
+ */

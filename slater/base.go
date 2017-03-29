@@ -27,42 +27,31 @@
  * SUCH DAMAGE.
  */
 
-package config
+package slater
 
 import (
 	"fmt"
-
-	"github.com/spf13/viper"
+	"runtime"
 )
 
-// Get configuration varible
-/* {{{ [config.Get] Get varible */
-func Get(key string) string {
-	val := viper.Get(key)
-	if nil == val {
-		return ""
-	}
-
-	return val.(string)
+// Conf : Iniial configuration
+type Conf struct {
+	CustomConf map[string]interface{}
+	Game       string
 }
 
-/* }}} */
-
-// Initial
-/* {{{ [init] Pakcage init */
-func init() {
-	viper.SetConfigName("slater")
-	viper.SetConfigType("json")
-	viper.AddConfigPath("/etc/slater/")
-	viper.AddConfigPath("$HOME/.slater")
-	viper.AddConfigPath(".")
-
-	err := viper.ReadInConfig()
-	if err != nil {
-		panic(fmt.Errorf("Read config file error: %s\n", err))
+// Start : Slater startup
+/* {{{ [slater.Start] Startup */
+func Start(c *Conf) (err error) {
+	if nil == c {
+		return fmt.Errorf("No valid configuration")
 	}
 
-	return
+	// Runtime
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	fmt.Printf("Start slater engine with game <%s>", c.Game)
+
+	return nil
 }
 
 /* }}} */
