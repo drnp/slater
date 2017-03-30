@@ -30,37 +30,79 @@
 package config
 
 import (
-	"fmt"
-
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-// Get configuration varible
+var rootCmd = &cobra.Command{
+	Use:  "<SLATER-GAME>",
+	Long: "Slater game",
+}
+
+var configFile string
+
+// Get : Get configuration varible
 /* {{{ [config.Get] Get varible */
-func Get(key string) string {
+func Get(key string) interface{} {
 	val := viper.Get(key)
 	if nil == val {
 		return ""
 	}
 
-	return val.(string)
+	return val
 }
 
 /* }}} */
 
-// Initial
-/* {{{ [init] Pakcage init */
-func init() {
-	viper.SetConfigName("slater")
-	viper.SetConfigType("json")
-	viper.AddConfigPath("/etc/slater/")
-	viper.AddConfigPath("$HOME/.slater")
-	viper.AddConfigPath(".")
+// SetDefault : Set default configuration variable
+/* {{{ [config.SetDefault] Set variable */
+func SetDefault(key string, value interface{}) {
+	viper.SetDefault(key, value)
+
+	return
+}
+
+/* }}} */
+
+// Load : Load all configurations from file and enviroment
+func Load() {
+	// Fetch flag
+	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "", "", "Path of configuration file")
+
+	if 0 == len(configFile) {
+		viper.SetConfigFile("slater")
+		viper.SetConfigType("json")
+		viper.AddConfigPath("/etc/slater/")
+		viper.AddConfigPath(".")
+	} else {
+		viper.SetConfigFile(configFile)
+	}
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		panic(fmt.Errorf("Read config file error: %s\n", err))
+		// Read config failed
 	}
+
+	// Enviroments
+	viper.SetEnvPrefix("slater")
+	viper.AutomaticEnv()
+
+	return
+}
+
+/* }}} */
+
+// init : Initialize, set global default values
+/* {{{ [init] */
+func init() {
+	viper.SetDefault("listen_addr", "0.0.0.0")
+	viper.SetDefault("listen_port", 9797)
+	viper.SetDefault("room_service_addr", "127.0.0.1")
+	viper.SetDefault("room_service_port", 9798)
+	viper.SetDefault("room_service_ssl", true)
+	viper.SetDefault("storage_service_addr", "127.0.0.1")
+	viper.SetDefault("storage_service_port", 9799)
+	viper.SetDefault("storage_service_ssl", true)
 
 	return
 }

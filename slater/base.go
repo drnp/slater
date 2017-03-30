@@ -32,6 +32,8 @@ package slater
 import (
 	"fmt"
 	"runtime"
+
+	"github.com/drnp/slater/slater/runtime/config"
 )
 
 // Conf : Iniial configuration
@@ -49,7 +51,19 @@ func Start(c *Conf) (err error) {
 
 	// Runtime
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	fmt.Printf("Start slater engine with game <%s>", c.Game)
+
+	// Default values
+	if nil != c.CustomConf {
+		for key, value := range c.CustomConf {
+			config.SetDefault(key, value)
+		}
+	}
+
+	// Override config
+	config.Load()
+
+	// Start
+	fmt.Printf("Start slater engine with game <%s> ...\n", c.Game)
 
 	return nil
 }
