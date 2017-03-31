@@ -27,87 +27,87 @@
  * SUCH DAMAGE.
  */
 
-package config
+package transmitter
 
 import (
 	"fmt"
-
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	"io"
+	"net"
 )
 
-var rootCmd = &cobra.Command{
-	Use:  "<SLATER-GAME>",
-	Long: "Slater game",
-}
+// SlaterListener : Listener interface of slater engine
+/* {{{ [SlaterListener] Listener interface */
+type SlaterListener interface {
+	// Init : Called on server start
+	Init(addr string) error
 
-var configFile string
+	// Accept : Return incoming connection from client.
+	// We support TCP / UNIX / TLS here
+	Accept() (conn io.ReadWriteCloser, clientAddr string, err error)
 
-// Get : Get configuration varible
-/* {{{ [config.Get] Get varible */
-func Get(key string) interface{} {
-	val := viper.Get(key)
+	// Close : Close the listener
+	// Server shutdown
+	Close() error
 
-	return val
+	// ListenAddr : Listener's network address
+	ListenAddr() net.Addr
 }
 
 /* }}} */
 
-// SetDefault : Set default configuration variable
-/* {{{ [config.SetDefault] Set variable */
-func SetDefault(key string, value interface{}) {
-	viper.SetDefault(key, value)
+// defaultListener : TCPServer listener
+/* {{{ [defaultListener] */
+type defaultListener struct {
+	L net.Listener
+}
+
+func (dl *defaultListener) Init(addr string) (err error) {
+	fmt.Printf("Listen on addr : %s\n", addr)
+	dl.L, err = net.Listen("tcp", addr)
 
 	return
 }
 
-/* }}} */
-
-// Load : Load all configurations from file and enviroment
-func Load() {
-	// Fetch flag
-	//rootCmd.PersistentFlags().StringVarP(&configFile, "config", "", "", "Path of configuration file")
-	//viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
-
-	if 0 == len(configFile) {
-		viper.SetConfigFile("slater")
-		viper.SetConfigType("json")
-		viper.AddConfigPath("/etc/slater/")
-		viper.AddConfigPath(".")
-	} else {
-		viper.SetConfigFile(configFile)
-		fmt.Printf("Config file set to %s\n", configFile)
-	}
-
-	err := viper.ReadInConfig()
+func (dl *defaultListener) Accept() (conn io.ReadWriteCloser, clientAddr string, err error) {
+	c, err := dl.L.Accept()
 	if err != nil {
-		// Read config failed
+		return nil, "", err
 	}
 
-	// Enviroments
-	viper.SetEnvPrefix("slater")
-	viper.AutomaticEnv()
+	return c, c.RemoteAddr().String(), nil
+}
 
-	return
+func (dl *defaultListener) Close() error {
+	return dl.L.Close()
+}
+
+func (dl *defaultListener) ListenAddr() net.Addr {
+	if dl.L != nil {
+		return dl.L.Addr()
+	}
+
+	return nil
 }
 
 /* }}} */
 
-// init : Initialize, set global default values
-/* {{{ [init] */
-func init() {
-	viper.SetDefault("listen_addr", "0.0.0.0")
-	viper.SetDefault("listen_port", 9797)
-	viper.SetDefault("room_service_addr", "127.0.0.1")
-	viper.SetDefault("room_service_port", 9798)
-	viper.SetDefault("room_service_ssl", true)
-	viper.SetDefault("storage_service_addr", "127.0.0.1")
-	viper.SetDefault("storage_service_port", 9799)
-	viper.SetDefault("storage_service_ssl", true)
+// netListener : General listener
+/* {{{ [netListener] */
+type netListener struct {
+	F func(addr string) (net.Listener, error)
+	L net.Listener
+}
 
-	viper.SetDefault("server_addr", ":9797")
+/* }}} */
 
-	return
+// NewTCPServer : Create a new TCP server
+/* {{{ [NewTCPServer] */
+func NewTCPServer(addr string, handler HandlerFunc) *SlaterServer {
+	return &SlaterServer{
+		Addr:     addr,
+		Handler:  handler,
+		Listener: &defaultListener{},
+	}
 }
 
 /* }}} */

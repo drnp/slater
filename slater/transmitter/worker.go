@@ -27,89 +27,77 @@
  * SUCH DAMAGE.
  */
 
-package config
+package transmitter
 
 import (
-	"fmt"
-
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	"bytes"
+	"errors"
+	"io"
 )
 
-var rootCmd = &cobra.Command{
-	Use:  "<SLATER-GAME>",
-	Long: "Slater game",
+type dataMsg struct {
+	header uint8
+	length uint32
+	msg    []byte
+}
+type accessMsg struct {
+	header byte
+	user   uint
+	length uint32
+	body   dataMsg
 }
 
-var configFile string
-
-// Get : Get configuration varible
-/* {{{ [config.Get] Get varible */
-func Get(key string) interface{} {
-	val := viper.Get(key)
-
-	return val
+type slaterMsg struct {
+	header byte
+	nUsers uint16
+	users  []uint64
+	length uint32
+	body   dataMsg
 }
 
-/* }}} */
-
-// SetDefault : Set default configuration variable
-/* {{{ [config.SetDefault] Set variable */
-func SetDefault(key string, value interface{}) {
-	viper.SetDefault(key, value)
-
-	return
+// SlaterWorker : Client worker of network server
+type SlaterWorker struct {
+	clientAddr string
+	recvBuffer *bytes.Buffer
+	sendBuffer *bytes.Buffer
+	recvChan   chan struct{}
+	sendChan   chan struct{}
 }
 
-/* }}} */
-
-// Load : Load all configurations from file and enviroment
-func Load() {
-	// Fetch flag
-	//rootCmd.PersistentFlags().StringVarP(&configFile, "config", "", "", "Path of configuration file")
-	//viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
-
-	if 0 == len(configFile) {
-		viper.SetConfigFile("slater")
-		viper.SetConfigType("json")
-		viper.AddConfigPath("/etc/slater/")
-		viper.AddConfigPath(".")
-	} else {
-		viper.SetConfigFile(configFile)
-		fmt.Printf("Config file set to %s\n", configFile)
+// Drive : Start worker
+/* {{{ [Driver] */
+func (worker *SlaterWorker) Drive() error {
+	if worker == nil {
+		return errors.New("Invalid worker object")
 	}
 
-	err := viper.ReadInConfig()
-	if err != nil {
-		// Read config failed
-	}
+	go func() {
+		for {
+			select {
+			case <-worker.sendChan:
+			}
+		}
+	}()
 
-	// Enviroments
-	viper.SetEnvPrefix("slater")
-	viper.AutomaticEnv()
+	return nil
+}
 
-	return
+// AccessRequest : Default server handler
+// Read request from client and return response
+/* {{{ [AccessRequest] */
+func AccessRequest(clientAddr string, request interface{}) (response interface{}) {
+	return nil
 }
 
 /* }}} */
 
-// init : Initialize, set global default values
-/* {{{ [init] */
-func init() {
-	viper.SetDefault("listen_addr", "0.0.0.0")
-	viper.SetDefault("listen_port", 9797)
-	viper.SetDefault("room_service_addr", "127.0.0.1")
-	viper.SetDefault("room_service_port", 9798)
-	viper.SetDefault("room_service_ssl", true)
-	viper.SetDefault("storage_service_addr", "127.0.0.1")
-	viper.SetDefault("storage_service_port", 9799)
-	viper.SetDefault("storage_service_ssl", true)
+// clientHandler : Network client handler
+/* {{{ [clientHandler] */
+func clientHandler(server *SlaterServer, conn io.ReadWriteCloser, clientAddr string) {
 
-	viper.SetDefault("server_addr", ":9797")
-
-	return
 }
 
+//
 /* }}} */
 
 /*

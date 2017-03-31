@@ -32,9 +32,13 @@ package slater
 import (
 	"fmt"
 	"runtime"
+	"sync"
 
 	"github.com/drnp/slater/slater/runtime/config"
+	"github.com/drnp/slater/slater/transmitter"
 )
+
+var globalWaiter sync.WaitGroup
 
 // Conf : Iniial configuration
 type Conf struct {
@@ -64,6 +68,16 @@ func Start(c *Conf) (err error) {
 
 	// Start
 	fmt.Printf("Start slater engine with game <%s> ...\n", c.Game)
+
+	s := transmitter.NewTCPServer(config.Get("server_addr").(string), transmitter.AccessRequest)
+	s.Waiter = &globalWaiter
+	err = s.Start()
+	if err != nil {
+		//return err
+		panic(err)
+	}
+
+	globalWaiter.Wait()
 
 	return nil
 }
