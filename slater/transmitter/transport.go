@@ -30,6 +30,7 @@
 package transmitter
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net"
@@ -101,12 +102,28 @@ type netListener struct {
 /* }}} */
 
 // NewTCPServer : Create a new TCP server
-/* {{{ [NewTCPServer] */
+/* {{{ [NewTCPServer] Create TCP server */
 func NewTCPServer(addr string, handler HandlerFunc) *SlaterServer {
 	return &SlaterServer{
 		Addr:     addr,
 		Handler:  handler,
 		Listener: &defaultListener{},
+	}
+}
+
+/* }}} */
+
+// NewWorker : Create a new worker
+/* {{{ [NewWorker] Create worker */
+func NewWorker(addr string, conn io.ReadWriteCloser) *SlaterWorker {
+	return &SlaterWorker{
+		Addr:       addr,
+		conn:       conn,
+		recvBuffer: bytes.NewBuffer(nil),
+		sendBuffer: bytes.NewBuffer(nil),
+		recvChan:   make(chan struct{}),
+		sendChan:   make(chan int),
+		closeChan:  make(chan struct{}),
 	}
 }
 

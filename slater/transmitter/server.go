@@ -30,7 +30,6 @@
 package transmitter
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -127,15 +126,9 @@ func (server *SlaterServer) serve() error {
 				continue
 			}
 
-			worker = &SlaterWorker{
-				clientAddr: clientAddr,
-				recvBuffer: bytes.NewBuffer(nil),
-				sendBuffer: bytes.NewBuffer(nil),
-				recvChan:   make(chan struct{}),
-				sendChan:   make(chan struct{}),
-			}
+			worker = NewWorker(clientAddr, conn)
 
-			worker.Drive()
+			go worker.Drive()
 		}
 	}()
 

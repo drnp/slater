@@ -32,6 +32,7 @@ package transmitter
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 )
 
@@ -41,46 +42,130 @@ type dataMsg struct {
 	msg    []byte
 }
 type accessMsg struct {
-	header byte
-	user   uint
+	header uint8
 	length uint32
+	user   uint64
 	body   dataMsg
 }
 
 type slaterMsg struct {
-	header byte
+	header uint8
+	length uint32
 	nUsers uint16
 	users  []uint64
-	length uint32
 	body   dataMsg
 }
 
 // SlaterWorker : Client worker of network server
 type SlaterWorker struct {
-	clientAddr string
+	Addr       string
+	conn       io.ReadWriteCloser
 	recvBuffer *bytes.Buffer
 	sendBuffer *bytes.Buffer
 	recvChan   chan struct{}
-	sendChan   chan struct{}
+	sendChan   chan int
+	closeChan  chan struct{}
 }
 
 // Drive : Start worker
-/* {{{ [Driver] */
+/* {{{ [Driver] worker handler */
 func (worker *SlaterWorker) Drive() error {
 	if worker == nil {
 		return errors.New("Invalid worker object")
 	}
 
+	// Reader
 	go func() {
+		// Read data from socket
+		var err error
+		var n int
+
+	loop:
 		for {
-			select {
-			case <-worker.sendChan:
+			buf := make([]byte, 4096)
+			n, err = worker.conn.Read(buf)
+			if err != nil {
+				if err != io.EOF {
+					// Read error
+				} else {
+					// Worker closed
+					close(worker.closeChan)
+					break loop
+				}
+			} else {
+				n, err = worker.recvBuffer.Write(buf[:n])
+				if err != nil {
+					// Write buffer error
+				} else {
+					//fmt.Printf("Recv %d bytes from client\n", n)
+					//DebugBuffer(worker.recvBuffer)
+				}
 			}
 		}
 	}()
 
+	// Writer
+	go func() {
+		var err error
+		var nData int
+		var nSent int
+		var pos int
+		var buf []byte = make([]byte, 4096)
+
+	loop:
+		for {
+			<-worker.sendChan
+			pos = 0
+			if worker.sendBuffer.Len() > 0 {
+				nData, _ = worker.sendBuffer.Read(buf)
+				// Write out
+				nSent, err = worker.conn.Write(buf[:nData])
+				if err != nil {
+					if err == io.EOF {
+						// Nothing to read
+					} else {
+						// Error
+					}
+				} else {
+					//
+				}
+			}
+		}
+	}()
+
+loop:
+	for {
+		select {
+		case <-worker.sendChan:
+		case <-worker.closeChan:
+			fmt.Printf("Worker exit")
+			break loop
+		}
+	}
+
 	return nil
 }
+
+/* }}} */
+
+// Write : Send data from worker
+/* {{{ [Write] Send data */
+func (worker *SlaterWorker) Write(data []byte) error {
+	if worker == nil {
+		return errors.New("Invalid worker object")
+	}
+
+	size, err := worker.sendBuffer.Write(data)
+	if err != nil {
+		return err
+	}
+
+	worker.sendChan <- size
+
+	return nil
+}
+
+/* }}} */
 
 // AccessRequest : Default server handler
 // Read request from client and return response
@@ -97,7 +182,6 @@ func clientHandler(server *SlaterServer, conn io.ReadWriteCloser, clientAddr str
 
 }
 
-//
 /* }}} */
 
 /*
