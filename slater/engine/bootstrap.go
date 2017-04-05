@@ -29,6 +29,14 @@
 
 package engine
 
+// Start :Slater engine startup
+/* {{{ [Start] */
+func Start() {
+	return
+}
+
+/* }}} */
+
 /*
  * Local variables:
  * tab-width: 4

@@ -38,6 +38,9 @@ import (
 
 // HandlerFunc : Server handler function
 type HandlerFunc func(clientAddr string, request interface{}) (response interface{})
+type onConnectHandler func(worker *SlaterWorker) error
+type onCloseHandler func(worker *SlaterWorker) error
+type onDataHandler func(worker *SlaterWorker) (int, error)
 
 // SlaterServer : Main server struct
 type SlaterServer struct {
@@ -66,6 +69,11 @@ type SlaterServer struct {
 
 	// Waiter : Symc waiter
 	Waiter *sync.WaitGroup
+
+	// Hooks
+	OnConnect onConnectHandler
+	OnClose   onCloseHandler
+	OnData    onDataHandler
 }
 
 // serve : Go server
@@ -126,9 +134,11 @@ func (server *SlaterServer) serve() error {
 				continue
 			}
 
-			worker = NewWorker(clientAddr, conn)
-
+			worker = NewWorker(server, clientAddr, conn)
 			go worker.Drive()
+			if server.OnConnect != nil {
+				server.OnConnect(worker)
+			}
 		}
 	}()
 

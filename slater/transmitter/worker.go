@@ -32,7 +32,6 @@ package transmitter
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"io"
 )
 
@@ -65,6 +64,7 @@ type SlaterWorker struct {
 	recvChan   chan struct{}
 	sendChan   chan int
 	closeChan  chan struct{}
+	server     *SlaterServer
 }
 
 // Drive : Start worker
@@ -89,6 +89,10 @@ func (worker *SlaterWorker) Drive() error {
 					// Read error
 				} else {
 					// Worker closed
+					if worker.server != nil && worker.server.OnClose != nil {
+						worker.server.OnClose(worker)
+					}
+
 					close(worker.closeChan)
 					break loop
 				}
@@ -99,6 +103,11 @@ func (worker *SlaterWorker) Drive() error {
 				} else {
 					//fmt.Printf("Recv %d bytes from client\n", n)
 					//DebugBuffer(worker.recvBuffer)
+					if worker.server != nil && worker.server.OnData != nil {
+						worker.server.OnData(worker)
+					} else {
+						worker.recvBuffer.Reset()
+					}
 				}
 			}
 		}
@@ -106,28 +115,34 @@ func (worker *SlaterWorker) Drive() error {
 
 	// Writer
 	go func() {
-		var err error
-		var nData int
-		var nSent int
-		var pos int
-		var buf []byte = make([]byte, 4096)
+		var (
+			err   error
+			nData int
+			nSent int
+			n     int
+		)
+		buf := make([]byte, 4096)
 
 	loop:
 		for {
 			<-worker.sendChan
-			pos = 0
 			if worker.sendBuffer.Len() > 0 {
 				nData, _ = worker.sendBuffer.Read(buf)
+				nSent = 0
 				// Write out
-				nSent, err = worker.conn.Write(buf[:nData])
-				if err != nil {
-					if err == io.EOF {
-						// Nothing to read
+				for nSent < nData {
+					n, err = worker.conn.Write(buf[:nData])
+					if err != nil {
+						if err == io.EOF {
+							// Nothing to read
+							break loop
+						} else {
+							// Error
+						}
 					} else {
-						// Error
+						// Data sent
+						nSent += n
 					}
-				} else {
-					//
 				}
 			}
 		}
@@ -138,7 +153,6 @@ loop:
 		select {
 		case <-worker.sendChan:
 		case <-worker.closeChan:
-			fmt.Printf("Worker exit")
 			break loop
 		}
 	}
@@ -163,6 +177,26 @@ func (worker *SlaterWorker) Write(data []byte) error {
 	worker.sendChan <- size
 
 	return nil
+}
+
+/* }}} */
+
+// ReadAll : Read all data from worker
+/* {{{ [ReadAll] */
+func (worker *SlaterWorker) ReadAll() ([]byte, error) {
+	if worker == nil {
+		return nil, errors.New("Invalid worker object")
+	}
+
+	n := worker.recvBuffer.Len()
+	ret := make([]byte, n)
+	var err error
+	n, err = worker.recvBuffer.Read(ret)
+	if err != nil {
+		return nil, err
+	}
+
+	return ret, nil
 }
 
 /* }}} */

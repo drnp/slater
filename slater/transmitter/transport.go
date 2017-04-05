@@ -115,7 +115,7 @@ func NewTCPServer(addr string, handler HandlerFunc) *SlaterServer {
 
 // NewWorker : Create a new worker
 /* {{{ [NewWorker] Create worker */
-func NewWorker(addr string, conn io.ReadWriteCloser) *SlaterWorker {
+func NewWorker(server *SlaterServer, addr string, conn io.ReadWriteCloser) *SlaterWorker {
 	return &SlaterWorker{
 		Addr:       addr,
 		conn:       conn,
@@ -124,6 +124,7 @@ func NewWorker(addr string, conn io.ReadWriteCloser) *SlaterWorker {
 		recvChan:   make(chan struct{}),
 		sendChan:   make(chan int),
 		closeChan:  make(chan struct{}),
+		server:     server,
 	}
 }
 
