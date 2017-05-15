@@ -27,14 +27,19 @@
  * SUCH DAMAGE.
  */
 
-package engine
+package utils
 
-import "log"
+import (
+	"log"
+	"os"
+)
 
-// Start :Slater engine startup
-/* {{{ [Start] */
-func Start(logger *log.Logger) {
-	return
+// NewLogger : Create a logger with stdout
+/* {{{ [NewLogger] Create new logger */
+func NewLogger(prefix string) *log.Logger {
+	logger := log.New(os.Stdout, prefix, log.Ldate|log.Ltime|log.Lshortfile)
+
+	return logger
 }
 
 /* }}} */

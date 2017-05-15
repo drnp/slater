@@ -34,6 +34,8 @@ import (
 	"fmt"
 	"io"
 	"sync"
+
+	"github.com/drnp/slater/slater/engine"
 )
 
 // HandlerFunc : Server handler function
@@ -41,6 +43,7 @@ type HandlerFunc func(clientAddr string, request interface{}) (response interfac
 type onConnectHandler func(worker *SlaterWorker) error
 type onCloseHandler func(worker *SlaterWorker) error
 type onDataHandler func(worker *SlaterWorker) (int, error)
+type onMessage func(worker *SlaterWorker, msg *engine.Message) error
 
 // SlaterServer : Main server struct
 type SlaterServer struct {
@@ -74,6 +77,7 @@ type SlaterServer struct {
 	OnConnect onConnectHandler
 	OnClose   onCloseHandler
 	OnData    onDataHandler
+	OnMessage onMessage
 }
 
 // serve : Go server

@@ -29,11 +29,9 @@
 
 package engine
 
-import "log"
-
-// Start :Slater engine startup
-/* {{{ [Start] */
-func Start(logger *log.Logger) {
+// Command : Input command data
+/* {{{ [Command] */
+func Command(data Message) {
 	return
 }
 

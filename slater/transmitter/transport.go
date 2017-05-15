@@ -34,6 +34,8 @@ import (
 	"fmt"
 	"io"
 	"net"
+
+	"github.com/drnp/slater/slater/engine"
 )
 
 // SlaterListener : Listener interface of slater engine
@@ -118,6 +120,7 @@ func NewTCPServer(addr string, handler HandlerFunc) *SlaterServer {
 func NewWorker(server *SlaterServer, addr string, conn io.ReadWriteCloser) *SlaterWorker {
 	return &SlaterWorker{
 		Addr:       addr,
+		UID:        0,
 		conn:       conn,
 		recvBuffer: bytes.NewBuffer(nil),
 		sendBuffer: bytes.NewBuffer(nil),
@@ -126,6 +129,14 @@ func NewWorker(server *SlaterServer, addr string, conn io.ReadWriteCloser) *Slat
 		closeChan:  make(chan struct{}),
 		server:     server,
 	}
+}
+
+/* }}} */
+
+// SendMessage : Send command (message) to remote
+/* {{{ [SendCommand] Send message */
+func SendMessage(msg *engine.Message) {
+
 }
 
 /* }}} */

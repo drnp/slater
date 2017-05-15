@@ -27,17 +27,16 @@
  * SUCH DAMAGE.
  */
 
-package engine
+package transmitter
 
-import "log"
+import (
+	"github.com/drnp/slater/slater/engine"
+)
 
-// Start :Slater engine startup
-/* {{{ [Start] */
-func Start(logger *log.Logger) {
-	return
+// Decode : Try decode message
+func Decode(msg *engine.Message) (bool, error) {
+	return false, nil
 }
-
-/* }}} */
 
 /*
  * Local variables:

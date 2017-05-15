@@ -33,19 +33,27 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"log"
 	"runtime"
 	"sync"
 
+	"github.com/drnp/slater/slater/engine"
 	"github.com/drnp/slater/slater/runtime/config"
+	"github.com/drnp/slater/slater/runtime/utils"
 	"github.com/drnp/slater/slater/transmitter"
 )
 
+// Global waiter
 var globalWaiter sync.WaitGroup
+
+// Logger to stdout
+var logger *log.Logger
 
 // Conf : Iniial configuration
 type Conf struct {
 	CustomConf map[string]interface{}
 	Game       string
+	Standalone bool
 }
 
 func onConnectFunc(worker *transmitter.SlaterWorker) error {
@@ -80,6 +88,35 @@ func onDataFunc(worker *transmitter.SlaterWorker) (int, error) {
 	return len, err
 }
 
+func onMessageFunc(worker *transmitter.SlaterWorker, msg *engine.Message) error {
+	if msg == nil {
+		return errors.New("Invalid message object")
+	}
+
+	utils.DebugMessage(msg)
+	downmsg := engine.NewMessage(nil)
+	if msg.Payload != nil {
+		cmd, _ := engine.CmdDecode(msg.Payload, msg.SerializeMode)
+		if cmd != nil {
+			utils.DebugCommand(cmd)
+		}
+
+		downmsg.Type = engine.MsgTypeDownward
+		downmsg.SerializeMode = msg.SerializeMode
+		downmsg.UID = []int64{100, 200, 300, 400}
+		downmsg.Payload, _ = engine.CmdEncode(cmd, downmsg.SerializeMode)
+		worker.WriteMessage(downmsg)
+	} else {
+		if engine.MsgTypePing == msg.Type {
+			fmt.Println("Heartbeat !")
+			downmsg.Type = engine.MsgTypePong
+			worker.WriteMessage(downmsg)
+		}
+	}
+
+	return nil
+}
+
 // Start : Slater startup
 /* {{{ [slater.Start] Startup */
 func Start(c *Conf) (err error) {
@@ -101,21 +138,25 @@ func Start(c *Conf) (err error) {
 	config.Load()
 
 	// Start
-	fmt.Printf("Start slater engine with game <%s> ...\n", c.Game)
-
-	// TCPServer
-	s := transmitter.NewTCPServer(config.Get("server_addr").(string), transmitter.AccessRequest)
-	s.Waiter = &globalWaiter
-	s.OnConnect = onConnectFunc
-	s.OnClose = onCloseFunc
-	s.OnData = onDataFunc
-	err = s.Start()
-	if err != nil {
-		//return err
-		panic(err)
-	}
+	//fmt.Printf("Start slater engine with game <%s> ...\n", c.Game)
 
 	// Engine
+	engine.Start(logger)
+
+	// TCPServer
+	if !c.Standalone {
+		s := transmitter.NewTCPServer(config.Get("server_addr").(string), transmitter.AccessRequest)
+		s.Waiter = &globalWaiter
+		s.OnConnect = onConnectFunc
+		s.OnClose = onCloseFunc
+		s.OnData = onDataFunc
+		s.OnMessage = onMessageFunc
+		err = s.Start()
+		if err != nil {
+			//return err
+			panic(err)
+		}
+	}
 
 	globalWaiter.Wait()
 

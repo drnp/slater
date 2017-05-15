@@ -29,12 +29,85 @@
 
 package engine
 
-import "log"
+import (
+	"errors"
 
-// Start :Slater engine startup
-/* {{{ [Start] */
-func Start(logger *log.Logger) {
-	return
+	"github.com/ugorji/go/codec"
+)
+
+// CommonCommand : Common command
+type CommonCommand struct {
+	Additional map[string]string      `cmd:"Additional"`
+	Command    int                    `cmd:"Command"`
+	Params     map[string]interface{} `cmd:"Params"`
+}
+
+// CmdEncode : Encode command struct into bytes
+/* {{{ [CmdEncode] Encode command */
+func CmdEncode(cmd interface{}, t byte) ([]byte, error) {
+	if cmd == nil {
+		return nil, errors.New("Invalid command object")
+	}
+
+	var (
+		ret []byte
+		err error
+	)
+
+	switch t {
+	case MsgSerializeMsgPack:
+		var hdl codec.MsgpackHandle
+		hdl.EncodeOptions.StructToArray = true
+		enc := codec.NewEncoderBytes(&ret, &hdl)
+		err = enc.Encode(cmd)
+		break
+	case MsgSerializeJSON:
+		var hdl codec.JsonHandle
+		enc := codec.NewEncoderBytes(&ret, &hdl)
+		err = enc.Encode(cmd)
+		break
+	case MsgSerializeAMF3:
+		break
+	case MsgSerializeRaw:
+	default:
+		break
+	}
+
+	return ret, err
+}
+
+/* }}} */
+
+// CmdDecode : Decode bytes into struct
+/* {{{ [CmdDecode] */
+func CmdDecode(raw []byte, t byte) (*CommonCommand, error) {
+	if raw == nil {
+		return nil, errors.New("Invalid stream")
+	}
+
+	var (
+		ret CommonCommand
+		err error
+	)
+
+	switch t {
+	case MsgSerializeMsgPack:
+		var hdl codec.MsgpackHandle
+		dec := codec.NewDecoderBytes(raw, &hdl)
+		err = dec.Decode(&ret)
+		break
+	case MsgSerializeJSON:
+		var hdl codec.JsonHandle
+		dec := codec.NewDecoderBytes(raw, &hdl)
+		err = dec.Decode(&ret)
+		break
+	case MsgSerializeAMF3:
+		break
+	case MsgSerializeRaw:
+	default:
+		break
+	}
+	return &ret, err
 }
 
 /* }}} */
