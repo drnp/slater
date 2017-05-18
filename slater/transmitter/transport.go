@@ -191,6 +191,15 @@ func DefaultOnnMessage(worker *SlaterWorker, msg *engine.Message) error {
 		if cmd != nil {
 			utils.DebugCommand(cmd)
 		}
+
+		downmsg := engine.NewMessage(nil)
+		downmsg.Type = engine.MsgTypeDownward
+		//downmsg.SerializeMode = msg.SerializeMode
+		downmsg.Body.UID = []int64{8051}
+		downmsg.Body.App = "testApp"
+		downmsg.Body.Payload = msg.Body.Payload
+
+		worker.WriteMessage(downmsg)
 	} else {
 		if engine.MsgTypePing == msg.Type {
 			downmsg := engine.NewMessage(nil)
