@@ -88,10 +88,10 @@ func DebugMessage(msg *engine.Message) error {
 	fmt.Printf("Message type : %d\n", msg.Type)
 	fmt.Printf("Message compress mode : %d\n", msg.CompressMode)
 	fmt.Printf("Message serialize mode : %d\n", msg.SerializeMode)
-	fmt.Printf("UIDs : %v\n", msg.UID)
+	//fmt.Printf("UIDs : %v\n", msg.UID)
 	//fmt.Printf("Command : %d\n", msg.Cmd)
-	fmt.Printf("Payload : \n")
-	DebugByteArray(msg.Payload)
+	fmt.Printf("Body : \n")
+	//DebugByteArray(msg.Payload)
 
 	return nil
 }

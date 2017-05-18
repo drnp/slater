@@ -116,7 +116,8 @@ func (worker *SlaterWorker) Drive() error {
 								msg = engine.NewMessage(worker.recvBuffer)
 							}
 
-							if msg.Parse() {
+							ret, _ := msg.Parse()
+							if ret {
 								worker.server.OnMessage(worker, msg)
 								msg = nil
 							} else {

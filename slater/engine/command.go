@@ -42,13 +42,14 @@ type CommonCommand struct {
 	Params     map[string]interface{} `cmd:"Params"`
 }
 
-// CmdEncode : Encode command struct into bytes
-/* {{{ [CmdEncode] Encode command */
-func CmdEncode(cmd interface{}, t byte) ([]byte, error) {
-	if cmd == nil {
-		return nil, errors.New("Invalid command object")
-	}
+// ToRaw : CommonCommand to raw byte array
+func (cmd *CommonCommand) ToRaw() []byte {
+	return nil
+}
 
+// Encode : Encode command struct into bytes
+/* {{{ [Encode] Encode command */
+func (cmd *CommonCommand) Encode(t byte) ([]byte, error) {
 	var (
 		ret []byte
 		err error
@@ -70,6 +71,7 @@ func CmdEncode(cmd interface{}, t byte) ([]byte, error) {
 		break
 	case MsgSerializeRaw:
 	default:
+		ret = nil
 		break
 	}
 

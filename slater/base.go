@@ -93,22 +93,23 @@ func onMessageFunc(worker *transmitter.SlaterWorker, msg *engine.Message) error 
 		return errors.New("Invalid message object")
 	}
 
-	utils.DebugMessage(msg)
+	//utils.DebugMessage(msg)
 	downmsg := engine.NewMessage(nil)
-	if msg.Payload != nil {
-		cmd, _ := engine.CmdDecode(msg.Payload, msg.SerializeMode)
+	if msg.Body.Payload != nil {
+		cmd, _ := engine.CmdDecode(msg.Body.Payload, msg.SerializeMode)
 		if cmd != nil {
 			utils.DebugCommand(cmd)
 		}
-
-		downmsg.Type = engine.MsgTypeDownward
-		downmsg.SerializeMode = msg.SerializeMode
-		downmsg.UID = []int64{100, 200, 300, 400}
-		downmsg.Payload, _ = engine.CmdEncode(cmd, downmsg.SerializeMode)
-		worker.WriteMessage(downmsg)
+		/*
+			downmsg.Type = engine.MsgTypeDownward
+			downmsg.SerializeMode = msg.SerializeMode
+			downmsg.Body.UID = []int64{100, 200, 300, 400}
+			downmsg.Payload, _ = engine.CmdEncode(cmd, downmsg.SerializeMode)
+			worker.WriteMessage(downmsg)
+		*/
 	} else {
 		if engine.MsgTypePing == msg.Type {
-			fmt.Println("Heartbeat !")
+			//fmt.Println("Heartbeat !")
 			downmsg.Type = engine.MsgTypePong
 			worker.WriteMessage(downmsg)
 		}

@@ -33,7 +33,8 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
-	"fmt"
+
+	"github.com/ugorji/go/codec"
 )
 
 const (
@@ -61,6 +62,7 @@ const (
 	MsgTypePong
 )
 
+/*
 const (
 	// MsgStageHeader : Header needed (Type + CompressMode + SerializeMode) (1 byte)
 	MsgStageHeader int = iota
@@ -72,6 +74,15 @@ const (
 	MsgStageLength
 	// MsgStagePayload : Payload data needed (length bytes)
 	MsgStagePayload
+	// MsgStageComplete : All done
+	MsgStageComplete
+)
+*/
+const (
+	// MsgStageHeader : Header needed (Type + CompressMode + SerializeMode) + (BodyLength) (5 bytes)
+	MsgStageHeader byte = iota
+	// MsgStageBody : Body needed (n bytes)
+	MsgStageBody
 	// MsgStageComplete : All done
 	MsgStageComplete
 )
@@ -98,18 +109,31 @@ const (
 	MsgSerializeAMF3
 )
 
+// Body : Message body
+type Body struct {
+	App     string
+	UID     []int64
+	Payload []byte
+}
+
 // Message : Data struct defination
 type Message struct {
 	Type          byte
 	SerializeMode byte
 	CompressMode  byte
-	Uids          uint16
-	UID           []int64
-	PayloadLength uint32
-	Payload       []byte
+	BodyLength    uint32
+	Body          Body
 	buffer        *bytes.Buffer
-	Stage         int
+	Stage         byte
 }
+
+// NewBody : Create a new body
+/* {{{ [NewBody] */
+func NewBody() (body *Body) {
+	return &Body{}
+}
+
+/* }}} */
 
 // NewMessage : Create a new message
 /* {{{ [NewMessage] */
@@ -118,9 +142,9 @@ func NewMessage(buf *bytes.Buffer) (msg *Message) {
 		Type:          0,
 		SerializeMode: MsgSerializeMsgPack,
 		CompressMode:  MsgCompressNone,
-		//Cmd:           0,
-		buffer: buf,
-		Stage:  MsgStageHeader,
+		BodyLength:    0,
+		buffer:        buf,
+		Stage:         MsgStageHeader,
 	}
 }
 
@@ -128,83 +152,54 @@ func NewMessage(buf *bytes.Buffer) (msg *Message) {
 
 // Parse : Try parse
 /* {{{ [Parse] Try parse message */
-func (msg *Message) Parse() bool {
+func (msg *Message) Parse() (bool, error) {
 	if msg.buffer == nil {
-		return false
+		return false, nil
 	}
 
-	var remaining int
+	var remaining uint32
+	var err error
 	enough := false
 	for {
-		remaining = msg.buffer.Len()
+		remaining = uint32(msg.buffer.Len())
 		enough = true
 		switch msg.Stage {
 		case MsgStageHeader:
-			if remaining < 1 {
+			if remaining < 5 {
 				enough = false
 			} else {
 				header, _ := msg.buffer.ReadByte()
 				msg.Type = header >> 4
 				msg.SerializeMode = (header >> 2) & 3
 				msg.CompressMode = header & 3
-				if MsgTypePing == msg.Type {
-					msg.Stage = MsgStageComplete
-					return true
-				}
-
-				msg.Stage++
-			}
-			break
-		case MsgStageUids:
-			if remaining < 2 {
-				enough = false
-			} else {
-				b1, _ := msg.buffer.ReadByte()
-				b2, _ := msg.buffer.ReadByte()
-				msg.Uids = uint16(b1)<<8 | uint16(b2)
-				msg.Stage++
-			}
-			break
-		case MsgStageUID:
-			if remaining < (8 * int(msg.Uids)) {
-				enough = false
-			} else {
-				msg.UID = make([]int64, msg.Uids)
-				var UID int64
-				buf := make([]byte, 8)
-				for idx := 0; idx < int(msg.Uids); idx++ {
-					n, _ := msg.buffer.Read(buf)
-					if 8 == n {
-						r := bytes.NewReader(buf)
-						binary.Read(r, binary.BigEndian, &UID)
-						msg.UID[idx] = UID
-					}
-				}
-
-				msg.Stage++
-			}
-			break
-		case MsgStageLength:
-			if remaining < 4 {
-				enough = false
-			} else {
 				var length uint32
+				var n int
 				buf := make([]byte, 4)
-				n, _ := msg.buffer.Read(buf)
+				n, err = msg.buffer.Read(buf)
 				if 4 == n {
 					r := bytes.NewReader(buf)
 					binary.Read(r, binary.BigEndian, &length)
-					msg.PayloadLength = length
+					msg.BodyLength = length
 				}
+				if MsgTypePing == msg.Type {
+					// Force Zero
+					msg.BodyLength = 0
+				}
+
 				msg.Stage++
 			}
 			break
-		case MsgStagePayload:
-			if remaining < int(msg.PayloadLength) {
+		case MsgStageBody:
+			if remaining < msg.BodyLength {
 				enough = false
 			} else {
-				msg.Payload = make([]byte, msg.PayloadLength)
-				msg.buffer.Read(msg.Payload)
+				if msg.BodyLength > 0 {
+					raw := make([]byte, msg.BodyLength)
+					var hdl codec.MsgpackHandle
+					dec := codec.NewDecoderBytes(raw, &hdl)
+					err = dec.Decode(&msg.Body)
+				}
+
 				msg.Stage++
 			}
 			break
@@ -215,11 +210,11 @@ func (msg *Message) Parse() bool {
 		}
 
 		if MsgStageComplete == msg.Stage {
-			return true
+			return true, err
 		}
 
 		if false == enough {
-			return false
+			return false, err
 		}
 	}
 }
@@ -230,45 +225,37 @@ func (msg *Message) Parse() bool {
 /* {{{ [Stream] Serialize message to bytes */
 func (msg *Message) Stream() ([]byte, error) {
 	var buf bytes.Buffer
+	var err error
 	w := bufio.NewWriter(&buf)
 
 	// Ignore stage now
 	// Write header
 	header := ((msg.Type & 15) << 4) | ((msg.SerializeMode & 3) << 2) | (msg.CompressMode & 3)
 	buf.WriteByte(byte(header))
+	switch msg.Type {
+	case MsgTypeDownward:
+		// Pack body
+		var raw []byte
+		var hdl codec.MsgpackHandle
+		hdl.EncodeOptions.StructToArray = true
+		enc := codec.NewEncoderBytes(&raw, &hdl)
+		err = enc.Encode(msg.Body)
 
-	if MsgTypeDownward == msg.Type {
-		// UIDs
-		if msg.UID == nil {
-			// No UID?
-			fmt.Println("No UID")
-			buf.WriteByte(0)
-			buf.WriteByte(0)
-		} else {
-			fmt.Println("Has UID")
-			uids := uint16(len(msg.UID))
-			binary.Write(w, binary.BigEndian, uids)
-			for idx := 0; idx < int(uids); idx++ {
-				binary.Write(w, binary.BigEndian, msg.UID[idx])
-			}
-
-			w.Flush()
-		}
-
-		// Payload
-		if msg.Payload == nil {
-			fmt.Println("No payload")
-			buf.Write([]byte{0, 0, 0, 0})
-		} else {
-			fmt.Println("Has payload")
-			length := uint32(len(msg.Payload))
-			binary.Write(w, binary.BigEndian, length)
-			w.Flush()
-			buf.Write(msg.Payload)
-		}
+		// Write length
+		binary.Write(w, binary.BigEndian, uint32(len(raw)))
+		w.Flush()
+		buf.Write(raw)
+		break
+	case MsgTypePong:
+	case MsgTypeUpwardAck:
+		buf.Write([]byte{0, 0, 0, 0})
+		break
+	default:
+		// Nothing to do
+		break
 	}
 
-	return buf.Bytes(), nil
+	return buf.Bytes(), err
 }
 
 /* }}} */
