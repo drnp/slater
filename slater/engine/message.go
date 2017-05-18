@@ -195,6 +195,7 @@ func (msg *Message) Parse() (bool, error) {
 			} else {
 				if msg.BodyLength > 0 {
 					raw := make([]byte, msg.BodyLength)
+					msg.buffer.Read(raw)
 					var hdl codec.MsgpackHandle
 					dec := codec.NewDecoderBytes(raw, &hdl)
 					err = dec.Decode(&msg.Body)
@@ -247,6 +248,8 @@ func (msg *Message) Stream() ([]byte, error) {
 		buf.Write(raw)
 		break
 	case MsgTypePong:
+		buf.Write([]byte{0, 0, 0, 0})
+		break
 	case MsgTypeUpwardAck:
 		buf.Write([]byte{0, 0, 0, 0})
 		break

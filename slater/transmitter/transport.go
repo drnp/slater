@@ -31,11 +31,14 @@ package transmitter
 
 import (
 	"bytes"
+	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"net"
 
 	"github.com/drnp/slater/slater/engine"
+	"github.com/drnp/slater/slater/runtime/utils"
 )
 
 // SlaterListener : Listener interface of slater engine
@@ -140,6 +143,64 @@ func SendMessage(msg *engine.Message) {
 }
 
 /* }}} */
+
+// DefaultOnConnect : Default behavior
+func DefaultOnConnect(worker *SlaterWorker) error {
+	if worker == nil {
+		return errors.New("Invalid worker object")
+	}
+
+	fmt.Printf("Client %s connected\n", worker.Addr)
+
+	return nil
+}
+
+// DefaultOnClose : Default behavior
+func DefaultOnClose(worker *SlaterWorker) error {
+	if worker == nil {
+		return errors.New("Invalid worker object")
+	}
+
+	fmt.Printf("Client %s disconnected\n", worker.Addr)
+
+	return nil
+}
+
+// DefaultOnData : Default behavior
+func DefaultOnData(worker *SlaterWorker) (int, error) {
+	if worker == nil {
+		return 0, errors.New("Invalid worker object")
+	}
+
+	data, err := worker.ReadAll()
+	len := binary.Size(data)
+	fmt.Printf("Read %d bytes from client %s\n", len, worker.Addr)
+
+	return len, err
+}
+
+// DefaultOnnMessage : Default behavior
+func DefaultOnnMessage(worker *SlaterWorker, msg *engine.Message) error {
+	if msg == nil {
+		return errors.New("Invalid message object")
+	}
+
+	utils.DebugMessage(msg)
+	if msg.Body.Payload != nil {
+		cmd, _ := engine.CmdDecode(msg.Body.Payload, msg.SerializeMode)
+		if cmd != nil {
+			utils.DebugCommand(cmd)
+		}
+	} else {
+		if engine.MsgTypePing == msg.Type {
+			downmsg := engine.NewMessage(nil)
+			downmsg.Type = engine.MsgTypePong
+			worker.WriteMessage(downmsg)
+		}
+	}
+
+	return nil
+}
 
 /*
  * Local variables:

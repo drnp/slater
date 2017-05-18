@@ -88,10 +88,28 @@ func DebugMessage(msg *engine.Message) error {
 	fmt.Printf("Message type : %d\n", msg.Type)
 	fmt.Printf("Message compress mode : %d\n", msg.CompressMode)
 	fmt.Printf("Message serialize mode : %d\n", msg.SerializeMode)
-	//fmt.Printf("UIDs : %v\n", msg.UID)
-	//fmt.Printf("Command : %d\n", msg.Cmd)
 	fmt.Printf("Body : \n")
-	//DebugByteArray(msg.Payload)
+
+	DebugBody(&msg.Body)
+
+	return nil
+}
+
+/* }}} */
+
+// DebugBody : Output message body
+/* {{{ [DebugBody] Output body */
+func DebugBody(body *engine.Body) error {
+	if body == nil {
+		return errors.New("Invalid message body")
+	}
+
+	fmt.Printf("=== Debug message body ===\n")
+	fmt.Printf("App : %s\n", body.App)
+	fmt.Printf("Uid : %v\n", body.UID)
+	fmt.Printf("Payload : \n")
+
+	DebugByteArray(body.Payload)
 
 	return nil
 }
