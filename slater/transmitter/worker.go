@@ -129,13 +129,12 @@ func (worker *SlaterWorker) Drive() error {
 			nSent int
 			n     int
 		)
-		logger := utils.NewLogger("SLATER: ")
+		//logger := utils.NewLogger("SLATER: ")
 		buf := make([]byte, 4096)
 
 	loop:
 		for {
 			<-worker.sendChan
-			logger.Println("Data here")
 			if worker.sendBuffer.Len() > 0 {
 				nData, _ = worker.sendBuffer.Read(buf)
 				nSent = 0
