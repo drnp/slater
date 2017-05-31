@@ -101,6 +101,7 @@ func (worker *SlaterWorker) Drive() error {
 							if ret {
 								if engine.MsgTypePing == msg.Type {
 									// Ping - Pong
+									logger.Println("Access ping")
 									pong := engine.NewMessage(nil)
 									pong.Type = engine.MsgTypePong
 									worker.WriteMessage(pong)
