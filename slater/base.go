@@ -51,6 +51,10 @@ type Conf struct {
 	CustomConf map[string]interface{}
 	Game       string
 	Standalone bool
+	OnConnect  transmitter.OnConnectHandler
+	OnClose    transmitter.OnCloseHandler
+	OnData     transmitter.OnDataHandler
+	OnMessage  transmitter.OnMessageHandler
 }
 
 // Start : Slater startup
@@ -83,10 +87,35 @@ func Start(c *Conf) (err error) {
 	if !c.Standalone {
 		s := transmitter.NewTCPServer(config.Get("server_addr").(string), transmitter.AccessRequest)
 		s.Waiter = &globalWaiter
-		//s.OnConnect = transmitter.DefaultOnConnect
-		//s.OnClose = transmitter.DefaultOnClose
-		//s.OnData = transmitter.DefaultOnData
-		//s.OnMessage = transmitter.DefaultOnnMessage
+
+		// Event : Connect
+		if c.OnConnect != nil {
+			s.OnConnect = c.OnConnect
+		} else {
+			s.OnClose = transmitter.DefaultOnConnect
+		}
+
+		// Event : Close
+		if c.OnClose != nil {
+			s.OnClose = c.OnClose
+		} else {
+			s.OnClose = transmitter.DefaultOnClose
+		}
+
+		// Event : Data
+		if c.OnData != nil {
+			s.OnData = c.OnData
+		} else {
+			s.OnData = transmitter.DefaultOnData
+		}
+
+		// Event : Message
+		if c.OnMessage != nil {
+			s.OnMessage = c.OnMessage
+		} else {
+			s.OnMessage = transmitter.DefaultOnnMessage
+		}
+
 		err = s.Start()
 		if err != nil {
 			//return err
