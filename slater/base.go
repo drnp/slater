@@ -83,10 +83,10 @@ func Start(c *Conf) (err error) {
 	if !c.Standalone {
 		s := transmitter.NewTCPServer(config.Get("server_addr").(string), transmitter.AccessRequest)
 		s.Waiter = &globalWaiter
-		s.OnConnect = transmitter.DefaultOnConnect
-		s.OnClose = transmitter.DefaultOnClose
-		s.OnData = transmitter.DefaultOnData
-		s.OnMessage = transmitter.DefaultOnnMessage
+		//s.OnConnect = transmitter.DefaultOnConnect
+		//s.OnClose = transmitter.DefaultOnClose
+		//s.OnData = transmitter.DefaultOnData
+		//s.OnMessage = transmitter.DefaultOnnMessage
 		err = s.Start()
 		if err != nil {
 			//return err

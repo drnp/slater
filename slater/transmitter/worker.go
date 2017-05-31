@@ -39,26 +39,6 @@ import (
 	"github.com/drnp/slater/slater/runtime/utils"
 )
 
-type dataMsg struct {
-	header uint8
-	length uint32
-	msg    []byte
-}
-type accessMsg struct {
-	header uint8
-	length uint32
-	user   uint64
-	body   dataMsg
-}
-
-type slaterMsg struct {
-	header uint8
-	length uint32
-	nUsers uint16
-	users  []uint64
-	body   dataMsg
-}
-
 // SlaterWorker : Client worker of network server
 type SlaterWorker struct {
 	Addr       string

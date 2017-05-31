@@ -144,6 +144,7 @@ func SendMessage(msg *engine.Message) {
 
 /* }}} */
 
+/* {{{ / Default Behaviors / */
 // DefaultOnConnect : Default behavior
 func DefaultOnConnect(worker *SlaterWorker) error {
 	if worker == nil {
@@ -210,6 +211,8 @@ func DefaultOnnMessage(worker *SlaterWorker, msg *engine.Message) error {
 
 	return nil
 }
+
+/* }}} */
 
 /*
  * Local variables:
