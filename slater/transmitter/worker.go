@@ -90,7 +90,7 @@ func (worker *SlaterWorker) Drive() error {
 					// Write buffer error
 					logger.Println("Buffer write error")
 				} else {
-					if worker.server != nil && worker.server.OnMessage != nil {
+					if worker.server != nil {
 					TryMsg:
 						for {
 							if msg == nil {
@@ -99,7 +99,14 @@ func (worker *SlaterWorker) Drive() error {
 
 							ret, _ := msg.Parse()
 							if ret {
-								worker.server.OnMessage(worker, msg)
+								if engine.MsgTypePing == msg.Type {
+									// Ping - Pong
+									pong := engine.NewMessage(nil)
+									pong.Type = engine.MsgTypePong
+									worker.WriteMessage(pong)
+								} else if worker.server.OnMessage != nil {
+									worker.server.OnMessage(worker, msg)
+								}
 								msg = nil
 							} else {
 								break TryMsg
