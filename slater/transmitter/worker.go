@@ -32,6 +32,7 @@ package transmitter
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 
 	"github.com/drnp/slater/slater/engine"
@@ -140,6 +141,7 @@ func (worker *SlaterWorker) Drive() error {
 				nSent = 0
 				// Write out
 				for nSent < nData {
+					fmt.Printf("Sending : %v\n", buf)
 					n, err = worker.conn.Write(buf[:nData])
 					if err != nil {
 						if err == io.EOF {
