@@ -141,7 +141,7 @@ func (worker *SlaterWorker) Drive() error {
 				nSent = 0
 				// Write out
 				for nSent < nData {
-					fmt.Printf("Sending : %v\n", buf)
+					fmt.Printf("Sending : %v\n", buf[:nData])
 					n, err = worker.conn.Write(buf[:nData])
 					if err != nil {
 						if err == io.EOF {
@@ -203,6 +203,7 @@ func (worker *SlaterWorker) WriteMessage(msg *engine.Message) error {
 	//fmt.Printf("%v\n", data)
 	size, err := worker.sendBuffer.Write(data)
 	if err != nil {
+		fmt.Println(err.Error())
 		return err
 	}
 
