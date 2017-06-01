@@ -101,7 +101,7 @@ func (worker *SlaterWorker) Drive() error {
 							if ret {
 								if engine.MsgTypePing == msg.Type {
 									// Ping - Pong
-									//logger.Println("Access ping")
+									logger.Println("Access ping")
 									pong := engine.NewMessage(nil)
 									pong.Type = engine.MsgTypePong
 									worker.WriteMessage(pong)
@@ -200,7 +200,7 @@ func (worker *SlaterWorker) WriteMessage(msg *engine.Message) error {
 	}
 
 	data, _ := msg.Stream()
-	//fmt.Printf("%v\n", data)
+	fmt.Printf("%v\n", data)
 	size, err := worker.sendBuffer.Write(data)
 	if err != nil {
 		fmt.Println(err.Error())
