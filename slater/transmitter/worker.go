@@ -32,7 +32,6 @@ package transmitter
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"io"
 
 	"github.com/drnp/slater/slater/engine"
@@ -101,7 +100,7 @@ func (worker *SlaterWorker) Drive() error {
 							if ret {
 								if engine.MsgTypePing == msg.Type {
 									// Ping - Pong
-									logger.Println("Access ping")
+									//logger.Println("Access ping")
 									pong := engine.NewMessage(nil)
 									pong.Type = engine.MsgTypePong
 									worker.WriteMessage(pong)
@@ -141,7 +140,6 @@ func (worker *SlaterWorker) Drive() error {
 				nSent = 0
 				// Write out
 				for nSent < nData {
-					fmt.Printf("Sending : %v\n", buf[:nData])
 					n, err = worker.conn.Write(buf[:nData])
 					if err != nil {
 						if err == io.EOF {
@@ -200,10 +198,9 @@ func (worker *SlaterWorker) WriteMessage(msg *engine.Message) error {
 	}
 
 	data, _ := msg.Stream()
-	fmt.Printf("%v\n", data)
 	size, err := worker.sendBuffer.Write(data)
 	if err != nil {
-		fmt.Println(err.Error())
+		//fmt.Println(err.Error())
 		return err
 	}
 
