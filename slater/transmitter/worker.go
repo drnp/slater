@@ -199,7 +199,8 @@ func (worker *SlaterWorker) WriteMessage(msg *engine.Message) error {
 	}
 
 	data, _ := msg.Stream()
-	fmt.Printf("Sending :\n%v\n", data)
+	fmt.Printf("Sending :\n%#v\n", data)
+	utils.DebugByteArray(data)
 	size, err := worker.sendBuffer.Write(data)
 	if err != nil {
 		//fmt.Println(err.Error())
