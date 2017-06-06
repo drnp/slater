@@ -32,6 +32,7 @@ package transmitter
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 
 	"github.com/drnp/slater/slater/engine"
@@ -198,6 +199,7 @@ func (worker *SlaterWorker) WriteMessage(msg *engine.Message) error {
 	}
 
 	data, _ := msg.Stream()
+	fmt.Printf("Sending :\n%v\n", data)
 	size, err := worker.sendBuffer.Write(data)
 	if err != nil {
 		//fmt.Println(err.Error())
