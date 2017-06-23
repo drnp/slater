@@ -64,7 +64,7 @@ func (worker *SlaterWorker) Drive() error {
 		var err error
 		var n int
 		var msg *engine.Message
-		logger := utils.NewLogger("SLATER: ")
+		logger := utils.NewLogger("SLATER WORKER: ")
 
 	loop:
 		for {
@@ -196,7 +196,9 @@ func (worker *SlaterWorker) WriteRaw(data []byte) error {
 // WriteMessage : Send engine.CommonCommand
 /* {{{ [WriteMessage] Send command */
 func (worker *SlaterWorker) WriteMessage(msg *engine.Message) error {
-	if msg == nil {
+	logger := utils.NewLogger("SLATER SEND MESSAGE: ")
+    if msg == nil {
+        logger.Println("Invalid message object");
 		return errors.New("Invalid message object")
 	}
 
@@ -205,10 +207,11 @@ func (worker *SlaterWorker) WriteMessage(msg *engine.Message) error {
 	//utils.DebugByteArray(data)
 	size, err := worker.sendBuffer.Write(data)
 	if err != nil {
-		//fmt.Println(err.Error())
+        logger.Pringln(err.Error())
 		return err
 	}
 
+    logger.Printf("Send %d bytes to langer\n", size)
 	worker.sendChan <- size
 
 	return nil
