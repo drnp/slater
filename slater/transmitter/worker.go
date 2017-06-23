@@ -207,7 +207,7 @@ func (worker *SlaterWorker) WriteMessage(msg *engine.Message) error {
 	//utils.DebugByteArray(data)
 	size, err := worker.sendBuffer.Write(data)
 	if err != nil {
-        logger.Pringln(err.Error())
+        logger.Println(err.Error())
 		return err
 	}
 
