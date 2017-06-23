@@ -105,7 +105,10 @@ func (worker *SlaterWorker) Drive() error {
 									pong.Type = engine.MsgTypePong
 									worker.WriteMessage(pong)
 								} else if worker.server.OnMessage != nil {
-									worker.server.OnMessage(worker, msg)
+									err = worker.server.OnMessage(worker, msg)
+                                    if err != nil {
+                                        logger.Printf("OnMessage error: %s\n", err.Error());
+                                    }
 								}
 								msg = nil
 							} else {
